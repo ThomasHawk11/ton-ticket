@@ -13,6 +13,42 @@ The system is composed of the following microservices:
 5. **Ticket Service** - Handles ticket inventory, reservations, and purchases
 6. **Frontend** - React-based user interface
 
+## Architecture Diagram
+
+```mermaid
+graph TD
+    Client[Client Browser] --> Frontend[Frontend React App]
+    Client --> AdminPanel[Admin Panel React App]
+    Frontend --> Gateway[API Gateway]
+    AdminPanel --> Gateway
+    
+    Gateway --> AuthService[Auth Service]
+    Gateway --> UserService[User Service]
+    Gateway --> EventService[Event Service]
+    Gateway --> TicketService[Ticket Service]
+    
+    AuthService --> AuthDB[(Auth Database)]
+    UserService --> UserDB[(User Database)]
+    EventService --> EventDB[(Event Database)]
+    TicketService --> TicketDB[(Ticket Database)]
+    
+    AuthService -.-> RabbitMQ{RabbitMQ}
+    UserService -.-> RabbitMQ
+    EventService -.-> RabbitMQ
+    TicketService -.-> RabbitMQ
+    
+    classDef service fill:#4CAF50,stroke:#009688,color:white;
+    classDef database fill:#2196F3,stroke:#0D47A1,color:white;
+    classDef client fill:#FF9800,stroke:#E65100,color:white;
+    classDef messagebroker fill:#9C27B0,stroke:#4A148C,color:white;
+    
+    class AuthService,UserService,EventService,TicketService service;
+    class AuthDB,UserDB,EventDB,TicketDB database;
+    class Client,Frontend,AdminPanel client;
+    class RabbitMQ messagebroker;
+    class Gateway service;
+```
+
 ## Technology Stack
 
 - **Frontend**: React
@@ -46,6 +82,10 @@ The system is composed of the following microservices:
 - Ticket Service: `http://localhost:3005`
 - RabbitMQ Management: `http://localhost:15672`
 - PHPMyAdmin: `http://localhost:8080`
+
+## Data imports
+
+You can download the SQL import files in [db_imports.zip](https://github.com/ThomasHawk11/ton-ticket/raw/main/db_imports.zip)
 
 ## API Documentation
 

@@ -189,7 +189,6 @@ services:
     networks:
       - app-network
 
-  # Single PHPMyAdmin instance for all databases
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
