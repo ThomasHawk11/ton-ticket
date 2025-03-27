@@ -189,46 +189,23 @@ services:
     networks:
       - app-network
 
-  # PHPMyAdmin instances for each database
-  phpmyadmin-auth:
+  # Single PHPMyAdmin instance for all databases
+  phpmyadmin:
     image: phpmyadmin/phpmyadmin
     ports:
-      - "8081:80"
+      - "8080:80"
     environment:
-      - PMA_HOST=auth-db
-      - PMA_PORT=3306
+      - PMA_HOSTS=auth-db,user-db,event-db,ticket-db
+      - PMA_PORTS=3306,3306,3306,3306
+      - PMA_USER=root
+      - PMA_PASSWORD=password
     networks:
       - app-network
-
-  phpmyadmin-user:
-    image: phpmyadmin/phpmyadmin
-    ports:
-      - "8082:80"
-    environment:
-      - PMA_HOST=user-db
-      - PMA_PORT=3306
-    networks:
-      - app-network
-
-  phpmyadmin-event:
-    image: phpmyadmin/phpmyadmin
-    ports:
-      - "8083:80"
-    environment:
-      - PMA_HOST=event-db
-      - PMA_PORT=3306
-    networks:
-      - app-network
-
-  phpmyadmin-ticket:
-    image: phpmyadmin/phpmyadmin
-    ports:
-      - "8084:80"
-    environment:
-      - PMA_HOST=ticket-db
-      - PMA_PORT=3306
-    networks:
-      - app-network
+    depends_on:
+      - auth-db
+      - user-db
+      - event-db
+      - ticket-db
 
   # RabbitMQ
   rabbitmq:
