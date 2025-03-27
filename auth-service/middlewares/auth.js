@@ -15,7 +15,6 @@ const logger = winston.createLogger({
   ]
 });
 
- to verify JWT token
 exports.verifyToken = (req, res, next) => {
   
   const authHeader = req.headers.authorization;
@@ -45,7 +44,6 @@ exports.verifyToken = (req, res, next) => {
   next();
 };
 
- to check user role
 exports.checkRole = (roles) => {
   return (req, res, next) => {
     if (!req.user) {
