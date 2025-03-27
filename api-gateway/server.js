@@ -240,30 +240,27 @@ app.post('/api/events/:eventId/tickets/reserve', (req, res, next) => {
   const eventId = req.params.eventId;
   logger.info(`Handling ticket reservation for event ${eventId}`);
   
-  const targetUrl = `${ticketServiceUrl}/api/events/${eventId}/tickets/reserve`;
-  logger.info(`Forwarding reservation request to: ${targetUrl}`);
-  
-  const options = {
-    url: targetUrl,
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    json: req.body
-  };
-  
-  if (req.headers.authorization) {
-    options.headers.authorization = req.headers.authorization;
-    logger.info('Authorization header forwarded to ticket service');
-  }
-  
   const request = require('request');
-  request(options, (error, response, body) => {
+  const ticketServiceEndpoint = `${ticketServiceUrl}/api/events/${eventId}/tickets/reserve`;
+  
+  logger.info(`Forwarding reservation request to: ${ticketServiceEndpoint}`);
+  
+  request({
+    url: ticketServiceEndpoint,
+    method: 'POST',
+    json: true,
+    body: req.body,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': req.headers.authorization
+    }
+  }, (error, response, body) => {
     if (error) {
       logger.error(`Error forwarding reservation request: ${error.message}`);
       return res.status(StatusCodes.BAD_GATEWAY).json({ error: 'Ticket service unavailable' });
     }
     
+    logger.info(`Reservation response status: ${response.statusCode}`);
     res.status(response.statusCode).json(body);
   });
 });
@@ -347,4 +344,3 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
-

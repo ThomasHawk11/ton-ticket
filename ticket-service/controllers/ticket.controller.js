@@ -21,7 +21,6 @@ const logger = winston.createLogger({
   ]
 });
 
-// Create ticket inventory when an event is created
 exports.createTicketInventory = async (eventData) => {
   try {
     const {
@@ -32,13 +31,11 @@ exports.createTicketInventory = async (eventData) => {
       startDate
     } = eventData;
 
-    // Calculate sale start and end dates (e.g., start now, end 1 day before event)
     const now = new Date();
     const eventStartDate = new Date(startDate);
     const saleEndDate = new Date(eventStartDate);
     saleEndDate.setDate(saleEndDate.getDate() - 1);
 
-    // Create ticket inventory
     const ticketInventory = await TicketInventory.create({
       eventId,
       totalTickets: ticketsAvailable,
@@ -52,7 +49,6 @@ exports.createTicketInventory = async (eventData) => {
 
     logger.info(`Ticket inventory created for event: ${eventId}`);
 
-    // Create individual tickets
     const ticketPromises = [];
     for (let i = 0; i < ticketsAvailable; i++) {
       ticketPromises.push(
@@ -77,7 +73,6 @@ exports.createTicketInventory = async (eventData) => {
   }
 };
 
-// Update ticket inventory when an event is updated
 exports.updateTicketInventory = async (eventData) => {
   try {
     const {
@@ -88,7 +83,6 @@ exports.updateTicketInventory = async (eventData) => {
       status
     } = eventData;
 
-    // Find existing inventory
     const inventory = await TicketInventory.findOne({
       where: { eventId }
     });
@@ -98,17 +92,14 @@ exports.updateTicketInventory = async (eventData) => {
       return null;
     }
 
-    // If event is cancelled, cancel all tickets
     if (status === 'cancelled') {
       await this.cancelTickets(eventData);
       return;
     }
 
-    // Calculate difference in available tickets
     const currentTotal = inventory.totalTickets;
     const diff = ticketsAvailable - currentTotal;
 
-    // Update inventory
     await inventory.update({
       totalTickets: ticketsAvailable,
       availableTickets: inventory.availableTickets + diff,
@@ -116,7 +107,6 @@ exports.updateTicketInventory = async (eventData) => {
       currency: currency || inventory.currency
     });
 
-    // If more tickets are needed, create them
     if (diff > 0) {
       const ticketPromises = [];
       for (let i = 0; i < diff; i++) {
@@ -136,7 +126,6 @@ exports.updateTicketInventory = async (eventData) => {
       logger.info(`Created ${diff} additional tickets for event: ${eventId}`);
     }
 
-    // If ticket price changed, update all available tickets
     if (ticketPrice && ticketPrice !== inventory.basePrice) {
       await Ticket.update(
         { price: ticketPrice },
@@ -158,12 +147,10 @@ exports.updateTicketInventory = async (eventData) => {
   }
 };
 
-// Cancel all tickets for an event
 exports.cancelTickets = async (eventData) => {
   try {
     const { id: eventId } = eventData;
 
-    // Find existing inventory
     const inventory = await TicketInventory.findOne({
       where: { eventId }
     });
@@ -173,14 +160,12 @@ exports.cancelTickets = async (eventData) => {
       return null;
     }
 
-    // Update inventory status
     await inventory.update({
       status: 'closed',
       availableTickets: 0,
       cancelledTickets: inventory.totalTickets - inventory.soldTickets
     });
 
-    // Update all available and reserved tickets to cancelled
     await Ticket.update(
       { status: 'cancelled' },
       {
@@ -191,7 +176,6 @@ exports.cancelTickets = async (eventData) => {
       }
     );
 
-    // For purchased tickets, we need to handle refunds and notifications
     const purchasedTickets = await Ticket.findAll({
       where: {
         eventId,
@@ -199,9 +183,7 @@ exports.cancelTickets = async (eventData) => {
       }
     });
 
-    // Process each purchased ticket
     for (const ticket of purchasedTickets) {
-      // Create a cancellation transaction
       await TicketTransaction.create({
         ticketId: ticket.id,
         userId: ticket.userId,
@@ -215,10 +197,8 @@ exports.cancelTickets = async (eventData) => {
         }
       });
 
-      // Update ticket status
       await ticket.update({ status: 'cancelled' });
 
-      // Send notification to user
       await publishToQueue('notification_event', {
         type: 'event_cancelled',
         userId: ticket.userId,
@@ -236,37 +216,25 @@ exports.cancelTickets = async (eventData) => {
   }
 };
 
-// Reserve a ticket
 exports.reserveTicket = async (req, res) => {
   try {
     const { eventId } = req.params;
     const userId = req.user.id;
 
-    // Check if event exists and is active by calling Event service
-    try {
-      const eventServiceUrl = process.env.EVENT_SERVICE_URL || 'http://event-service:3004';
-      const eventResponse = await axios.get(`${eventServiceUrl}/api/events/${eventId}`, {
-        headers: {
-          Authorization: req.headers.authorization
-        }
-      });
+    const eventServiceUrl = process.env.EVENT_SERVICE_URL || 'http://event-service:3004';
+    const eventResponse = await axios.get(`${eventServiceUrl}/api/events/${eventId}`, {
+      headers: {
+        Authorization: req.headers.authorization
+      }
+    });
 
-      const event = eventResponse.data.event;
-      if (event.status !== 'published') {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          message: 'Event is not available for ticket purchases'
-        });
-      }
-    } catch (error) {
-      if (error.response && error.response.status === 404) {
-        return res.status(StatusCodes.NOT_FOUND).json({
-          message: 'Event not found'
-        });
-      }
-      throw error;
+    const event = eventResponse.data.event;
+    if (event.status !== 'published') {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: 'Event is not available for ticket purchases'
+      });
     }
 
-    // Find ticket inventory
     const inventory = await TicketInventory.findOne({
       where: { eventId, status: 'active' }
     });
@@ -277,14 +245,12 @@ exports.reserveTicket = async (req, res) => {
       });
     }
 
-    // Check if tickets are available
     if (inventory.availableTickets <= 0) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: 'No tickets available for this event'
       });
     }
 
-    // Find an available ticket
     const ticket = await Ticket.findOne({
       where: {
         eventId,
@@ -298,19 +264,16 @@ exports.reserveTicket = async (req, res) => {
       });
     }
 
-    // Reserve the ticket
     await ticket.update({
       status: 'reserved',
       userId
     });
 
-    // Update inventory
     await inventory.update({
       availableTickets: inventory.availableTickets - 1,
       reservedTickets: inventory.reservedTickets + 1
     });
 
-    // Create transaction record
     const transaction = await TicketTransaction.create({
       ticketId: ticket.id,
       userId,
@@ -320,7 +283,6 @@ exports.reserveTicket = async (req, res) => {
       status: 'completed'
     });
 
-    // Publish message to RabbitMQ
     await publishToQueue('ticket_reserved', {
       ticketId: ticket.id,
       userId,
@@ -346,14 +308,12 @@ exports.reserveTicket = async (req, res) => {
   }
 };
 
-// Purchase a ticket
 exports.purchaseTicket = async (req, res) => {
   try {
     const { ticketId } = req.params;
     const { paymentMethod, paymentReference } = req.body;
     const userId = req.user.id;
 
-    // Find the ticket
     const ticket = await Ticket.findByPk(ticketId);
 
     if (!ticket) {
@@ -362,14 +322,12 @@ exports.purchaseTicket = async (req, res) => {
       });
     }
 
-    // Check if ticket is reserved by the same user
     if (ticket.status !== 'reserved' || ticket.userId !== userId) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: 'Ticket is not reserved by you'
       });
     }
 
-    // Find ticket inventory
     const inventory = await TicketInventory.findOne({
       where: { id: ticket.inventoryId }
     });
@@ -380,14 +338,12 @@ exports.purchaseTicket = async (req, res) => {
       });
     }
 
-    // Generate QR code for the ticket
     const { qrCodeDataUrl, validationCode } = await generateTicketQR(
       ticket.id,
       ticket.eventId,
       userId
     );
 
-    // Update ticket
     await ticket.update({
       status: 'purchased',
       purchaseDate: new Date(),
@@ -395,13 +351,11 @@ exports.purchaseTicket = async (req, res) => {
       validationCode
     });
 
-    // Update inventory
     await inventory.update({
       reservedTickets: inventory.reservedTickets - 1,
       soldTickets: inventory.soldTickets + 1
     });
 
-    // Create transaction record
     const transaction = await TicketTransaction.create({
       ticketId: ticket.id,
       userId,
@@ -413,7 +367,6 @@ exports.purchaseTicket = async (req, res) => {
       paymentReference
     });
 
-    // Publish message to RabbitMQ
     await publishToQueue('ticket_purchased', {
       ticketId: ticket.id,
       userId,
@@ -423,7 +376,6 @@ exports.purchaseTicket = async (req, res) => {
       purchaseDate: ticket.purchaseDate
     });
 
-    // Send notification to user
     await publishToQueue('notification_event', {
       type: 'ticket_purchased',
       userId,
@@ -464,19 +416,16 @@ exports.purchaseTicket = async (req, res) => {
   }
 };
 
-// Get user tickets
 exports.getUserTickets = async (req, res) => {
   try {
     const userId = req.params.userId || req.user.id;
 
-    // Check if user has permission to view tickets
     if (req.user.id !== userId && req.user.role !== 'admin') {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: 'Access denied'
       });
     }
 
-    // Get tickets
     const tickets = await Ticket.findAll({
       where: {
         userId,
@@ -485,7 +434,6 @@ exports.getUserTickets = async (req, res) => {
       order: [['purchaseDate', 'DESC']]
     });
 
-    // Fetch event details for each ticket
     const ticketsWithEventDetails = await Promise.all(
       tickets.map(async (ticket) => {
         try {
@@ -518,7 +466,6 @@ exports.getUserTickets = async (req, res) => {
             }
           };
         } catch (error) {
-          // If event details can't be fetched, return ticket with minimal info
           return {
             id: ticket.id,
             eventId: ticket.eventId,
@@ -553,20 +500,17 @@ exports.getUserTickets = async (req, res) => {
   }
 };
 
-// Validate a ticket
 exports.validateTicket = async (req, res) => {
   try {
     const { ticketId } = req.params;
     const { qrData } = req.body;
 
-    // Check if user has permission to validate tickets
     if (req.user.role !== 'admin' && req.user.role !== 'organizer') {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: 'Access denied'
       });
     }
 
-    // Find the ticket
     const ticket = await Ticket.findByPk(ticketId);
 
     if (!ticket) {
@@ -575,14 +519,12 @@ exports.validateTicket = async (req, res) => {
       });
     }
 
-    // Check if ticket is purchased
     if (ticket.status !== 'purchased') {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: `Ticket cannot be validated (status: ${ticket.status})`
       });
     }
 
-    // Validate QR code
     const isValid = validateTicketQR(qrData, ticket);
 
     if (!isValid) {
@@ -591,12 +533,10 @@ exports.validateTicket = async (req, res) => {
       });
     }
 
-    // Update ticket status
     await ticket.update({
       status: 'used'
     });
 
-    // Create transaction record
     await TicketTransaction.create({
       ticketId: ticket.id,
       userId: req.user.id,
@@ -630,29 +570,24 @@ exports.validateTicket = async (req, res) => {
   }
 };
 
-// Get event tickets
 exports.getEventTickets = async (req, res) => {
   try {
     const { eventId } = req.params;
     const { status, page = 1, limit = 50 } = req.query;
-    
-    // Check if user has permission to view event tickets
+
     if (req.user.role !== 'admin' && req.user.role !== 'organizer') {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: 'Access denied'
       });
     }
 
-    // Build query conditions
     const whereConditions = { eventId };
     if (status) {
       whereConditions.status = status;
     }
 
-    // Calculate pagination
     const offset = (page - 1) * limit;
 
-    // Get tickets with pagination
     const { count, rows: tickets } = await Ticket.findAndCountAll({
       where: whereConditions,
       limit: parseInt(limit),
@@ -677,13 +612,11 @@ exports.getEventTickets = async (req, res) => {
   }
 };
 
-// Cancel a ticket
 exports.cancelTicket = async (req, res) => {
   try {
     const { ticketId } = req.params;
     const userId = req.user.id;
 
-    // Find the ticket
     const ticket = await Ticket.findByPk(ticketId);
 
     if (!ticket) {
@@ -692,21 +625,18 @@ exports.cancelTicket = async (req, res) => {
       });
     }
 
-    // Check if user has permission to cancel the ticket
     if (ticket.userId !== userId && req.user.role !== 'admin') {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: 'Access denied'
       });
     }
 
-    // Check if ticket can be cancelled
     if (ticket.status !== 'purchased' && ticket.status !== 'reserved') {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: `Ticket cannot be cancelled (status: ${ticket.status})`
       });
     }
 
-    // Find ticket inventory
     const inventory = await TicketInventory.findOne({
       where: { id: ticket.inventoryId }
     });
@@ -717,12 +647,10 @@ exports.cancelTicket = async (req, res) => {
       });
     }
 
-    // Update ticket
     await ticket.update({
       status: 'cancelled'
     });
 
-    // Update inventory
     if (ticket.status === 'purchased') {
       await inventory.update({
         soldTickets: inventory.soldTickets - 1,
@@ -735,7 +663,6 @@ exports.cancelTicket = async (req, res) => {
       });
     }
 
-    // Create transaction record
     const transaction = await TicketTransaction.create({
       ticketId: ticket.id,
       userId,
@@ -749,7 +676,6 @@ exports.cancelTicket = async (req, res) => {
       }
     });
 
-    // Publish message to RabbitMQ
     await publishToQueue('ticket_cancelled', {
       ticketId: ticket.id,
       userId,
@@ -758,7 +684,6 @@ exports.cancelTicket = async (req, res) => {
       currency: ticket.currency
     });
 
-    // Send notification to user
     await publishToQueue('notification_event', {
       type: 'ticket_cancelled',
       userId,
@@ -792,4 +717,3 @@ exports.cancelTicket = async (req, res) => {
     });
   }
 };
-

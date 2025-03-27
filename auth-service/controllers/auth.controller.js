@@ -20,12 +20,10 @@ const logger = winston.createLogger({
   ]
 });
 
-// Register a new user
 exports.register = async (req, res) => {
   try {
     const { username, email, password, role } = req.body;
     
-    // Check if username or email already exists
     const existingUser = await User.findOne({
       where: {
         [db.Sequelize.Op.or]: [
@@ -41,10 +39,8 @@ exports.register = async (req, res) => {
       });
     }
     
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // Create new user
     const user = await User.create({
       username,
       email,
@@ -52,7 +48,6 @@ exports.register = async (req, res) => {
       role: role || 'user'
     });
     
-    // Publish user_created event to RabbitMQ
     await publishToQueue('user_created', {
       id: user.id,
       username: user.username,
@@ -81,12 +76,10 @@ exports.register = async (req, res) => {
   }
 };
 
-// Login user
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Find user by email
     const user = await User.findOne({
       where: { email }
     });
@@ -97,14 +90,12 @@ exports.login = async (req, res) => {
       });
     }
     
-    // Check if user is active
     if (!user.isActive) {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: 'Account is disabled'
       });
     }
     
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     
     if (!isPasswordValid) {
@@ -113,11 +104,9 @@ exports.login = async (req, res) => {
       });
     }
     
-    // Generate tokens
     const accessToken = generateAccessToken(user);
     const refreshToken = await generateRefreshToken(user.id);
     
-    // Update last login time
     await user.update({ lastLogin: new Date() });
     
     logger.info(`User logged in: ${user.id}`);
@@ -142,7 +131,6 @@ exports.login = async (req, res) => {
   }
 };
 
-// Refresh access token
 exports.refreshToken = async (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -153,7 +141,6 @@ exports.refreshToken = async (req, res) => {
       });
     }
     
-    // Verify refresh token
     const { valid, error, user } = await verifyRefreshToken(refreshToken);
     
     if (!valid) {
@@ -163,7 +150,6 @@ exports.refreshToken = async (req, res) => {
       });
     }
     
-    // Generate new access token
     const accessToken = generateAccessToken(user);
     
     logger.info(`Token refreshed for user: ${user.id}`);
@@ -180,7 +166,6 @@ exports.refreshToken = async (req, res) => {
   }
 };
 
-// Logout user
 exports.logout = async (req, res) => {
   try {
     const { refreshToken } = req.body;
@@ -191,7 +176,6 @@ exports.logout = async (req, res) => {
       });
     }
     
-    // Find and delete the refresh token
     const token = await RefreshToken.findOne({ where: { token: refreshToken } });
     
     if (!token) {
@@ -200,7 +184,6 @@ exports.logout = async (req, res) => {
       });
     }
     
-    // Delete the refresh token
     await token.destroy();
     
     logger.info(`User logged out: ${token.userId}`);
@@ -217,11 +200,8 @@ exports.logout = async (req, res) => {
   }
 };
 
-// Validate token
 exports.validateToken = async (req, res) => {
   try {
-    // If the request reaches here, it means the token is valid
-    // (verified by the verifyToken middleware)
     res.status(StatusCodes.OK).json({
       message: 'Token is valid',
       user: req.user
@@ -234,4 +214,3 @@ exports.validateToken = async (req, res) => {
     });
   }
 };
-

@@ -46,7 +46,6 @@ import { Line, Bar, Pie } from 'react-chartjs-2';
 import eventService from '../../services/eventService';
 import ticketService from '../../services/ticketService';
 
-// Register ChartJS components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -60,7 +59,6 @@ ChartJS.register(
 );
 
 const AdminStatsPage = () => {
-  // State
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('month');
@@ -84,19 +82,13 @@ const AdminStatsPage = () => {
   });
   
   useEffect(() => {
-    // Fetch stats when component mounts or filters change
     fetchStats();
   }, [timeRange, startDate, endDate]);
   
-  // Fetch stats
   const fetchStats = async () => {
     try {
       setLoading(true);
       
-      // In a real application, you would have dedicated API endpoints for statistics
-      // Here we're simulating with mock data
-      
-      // Calculate date range based on selected time range
       let start = startDate;
       let end = endDate;
       
@@ -108,7 +100,6 @@ const AdminStatsPage = () => {
         start = new Date(new Date().setFullYear(new Date().getFullYear() - 1));
       }
       
-      // Generate sales data
       const salesLabels = generateDateLabels(start, end, timeRange);
       const salesValues = generateRandomData(salesLabels.length, 10, 100);
       const revenueValues = salesValues.map(value => value * (Math.random() * 20 + 10));
@@ -133,7 +124,6 @@ const AdminStatsPage = () => {
         ]
       });
       
-      // Generate category data
       const categories = ['Concert', 'Festival', 'Théâtre', 'Sport', 'Conférence', 'Exposition'];
       const categoryValues = generateRandomData(categories.length, 5, 30);
       
@@ -164,7 +154,6 @@ const AdminStatsPage = () => {
         ]
       });
       
-      // Generate top events
       setTopEvents([
         { id: 1, title: 'Festival de Jazz', ticketsSold: 450, revenue: 22500, conversionRate: 85 },
         { id: 2, title: 'Concert Rock', ticketsSold: 380, revenue: 19000, conversionRate: 76 },
@@ -173,7 +162,6 @@ const AdminStatsPage = () => {
         { id: 5, title: 'Exposition d\'art', ticketsSold: 210, revenue: 4200, conversionRate: 65 }
       ]);
       
-      // Set summary stats
       setSummaryStats({
         totalEvents: 48,
         totalTickets: 3250,
@@ -190,22 +178,18 @@ const AdminStatsPage = () => {
     }
   };
   
-  // Generate date labels based on time range
   const generateDateLabels = (start, end, range) => {
     const labels = [];
     const current = new Date(start);
     
     while (current <= end) {
       if (range === 'week' || range === 'custom' && end - start <= 7 * 24 * 60 * 60 * 1000) {
-        // Daily format for week or short custom range
         labels.push(current.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
         current.setDate(current.getDate() + 1);
       } else if (range === 'month' || range === 'custom' && end - start <= 31 * 24 * 60 * 60 * 1000) {
-        // Daily format for month or medium custom range
         labels.push(current.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }));
-        current.setDate(current.getDate() + 2); // Skip days for readability
+        current.setDate(current.getDate() + 2); 
       } else if (range === 'year' || range === 'custom') {
-        // Monthly format for year or long custom range
         labels.push(current.toLocaleDateString('fr-FR', { month: 'short' }));
         current.setMonth(current.getMonth() + 1);
       }
@@ -214,35 +198,36 @@ const AdminStatsPage = () => {
     return labels;
   };
   
-  // Generate random data for charts
   const generateRandomData = (length, min, max) => {
     return Array.from({ length }, () => Math.floor(Math.random() * (max - min + 1) + min));
   };
   
-  // Handle time range change
   const handleTimeRangeChange = (event) => {
-    const value = event.target.value;
-    setTimeRange(value);
+    setTimeRange(event.target.value);
     
-    // Reset custom dates when selecting predefined ranges
-    if (value !== 'custom') {
-      if (value === 'week') {
-        setStartDate(new Date(new Date().setDate(new Date().getDate() - 7)));
-      } else if (value === 'month') {
-        setStartDate(new Date(new Date().setMonth(new Date().getMonth() - 1)));
-      } else if (value === 'year') {
-        setStartDate(new Date(new Date().setFullYear(new Date().getFullYear() - 1)));
-      }
-      setEndDate(new Date());
+    if (event.target.value === 'custom') {
+      return;
     }
+    
+    let start = new Date();
+    const end = new Date();
+    
+    if (event.target.value === 'week') {
+      start = new Date(new Date().setDate(new Date().getDate() - 7));
+    } else if (event.target.value === 'month') {
+      start = new Date(new Date().setMonth(new Date().getMonth() - 1));
+    } else if (event.target.value === 'year') {
+      start = new Date(new Date().setFullYear(new Date().getFullYear() - 1));
+    }
+    
+    setStartDate(start);
+    setEndDate(end);
   };
   
-  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
   };
   
-  // Chart options
   const salesChartOptions = {
     responsive: true,
     interaction: {
@@ -368,7 +353,6 @@ const AdminStatsPage = () => {
         </Box>
       ) : (
         <>
-          {/* Summary Stats */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={12} sm={6} md={2.4}>
               <Card>
@@ -436,7 +420,6 @@ const AdminStatsPage = () => {
             </Grid>
           </Grid>
           
-          {/* Charts */}
           <Grid container spacing={4}>
             <Grid item xs={12} lg={8}>
               <Paper sx={{ p: 3 }}>
@@ -509,4 +492,3 @@ const AdminStatsPage = () => {
 };
 
 export default AdminStatsPage;
-

@@ -43,7 +43,6 @@ import AdminLayout from '../../components/Layout/AdminLayout';
 import settingsService from '../../services/settingsService';
 
 const AdminSettingsPage = () => {
-  // State
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,18 +90,15 @@ const AdminSettingsPage = () => {
   const [testEmailAddress, setTestEmailAddress] = useState('');
   
   useEffect(() => {
-    // Fetch settings when component mounts
     fetchSettings();
   }, []);
   
-  // Fetch settings
   const fetchSettings = async () => {
     try {
       setLoading(true);
       
       const response = await settingsService.getSettings();
       
-      // Update state with fetched settings
       if (response.data.general) {
         setGeneralSettings(response.data.general);
       }
@@ -127,12 +123,10 @@ const AdminSettingsPage = () => {
     }
   };
   
-  // Handle tab change
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
   
-  // Handle general settings change
   const handleGeneralSettingsChange = (event) => {
     const { name, value, checked } = event.target;
     setGeneralSettings(prev => ({
@@ -141,7 +135,6 @@ const AdminSettingsPage = () => {
     }));
   };
   
-  // Handle email settings change
   const handleEmailSettingsChange = (event) => {
     const { name, value, checked } = event.target;
     setEmailSettings(prev => ({
@@ -150,7 +143,6 @@ const AdminSettingsPage = () => {
     }));
   };
   
-  // Handle payment settings change
   const handlePaymentSettingsChange = (event) => {
     const { name, value, checked } = event.target;
     setPaymentSettings(prev => ({
@@ -159,7 +151,6 @@ const AdminSettingsPage = () => {
     }));
   };
   
-  // Handle security settings change
   const handleSecuritySettingsChange = (event) => {
     const { name, value, checked } = event.target;
     setSecuritySettings(prev => ({
@@ -168,7 +159,6 @@ const AdminSettingsPage = () => {
     }));
   };
   
-  // Save settings
   const handleSaveSettings = async () => {
     try {
       setSaving(true);
@@ -185,7 +175,6 @@ const AdminSettingsPage = () => {
       setSuccess('Paramètres enregistrés avec succès');
       setSaving(false);
       
-      // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccess(null);
       }, 3000);
@@ -196,18 +185,15 @@ const AdminSettingsPage = () => {
     }
   };
   
-  // Open test email dialog
   const handleOpenTestEmailDialog = () => {
     setTestEmailDialogOpen(true);
   };
   
-  // Close test email dialog
   const handleCloseTestEmailDialog = () => {
     setTestEmailDialogOpen(false);
     setTestEmailAddress('');
   };
   
-  // Send test email
   const handleSendTestEmail = async () => {
     try {
       setSaving(true);
@@ -218,7 +204,6 @@ const AdminSettingsPage = () => {
       handleCloseTestEmailDialog();
       setSaving(false);
       
-      // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccess(null);
       }, 3000);
@@ -229,20 +214,17 @@ const AdminSettingsPage = () => {
     }
   };
   
-  // Reset settings to default
   const handleResetSettings = async () => {
     try {
       setSaving(true);
       
       await settingsService.resetSettings();
       
-      // Refresh settings
       fetchSettings();
       
       setSuccess('Paramètres réinitialisés avec succès');
       setSaving(false);
       
-      // Clear success message after 3 seconds
       setTimeout(() => {
         setSuccess(null);
       }, 3000);
@@ -253,12 +235,10 @@ const AdminSettingsPage = () => {
     }
   };
   
-  // Close error alert
   const handleCloseError = () => {
     setError(null);
   };
   
-  // Close success alert
   const handleCloseSuccess = () => {
     setSuccess(null);
   };
@@ -274,7 +254,6 @@ const AdminSettingsPage = () => {
         </Typography>
       </Box>
       
-      {/* Error and Success Messages */}
       <Snackbar 
         open={!!error} 
         autoHideDuration={6000} 
@@ -303,7 +282,6 @@ const AdminSettingsPage = () => {
         </Box>
       ) : (
         <>
-          {/* Settings Tabs */}
           <Paper sx={{ mb: 4 }}>
             <Tabs 
               value={tabValue} 
@@ -319,9 +297,7 @@ const AdminSettingsPage = () => {
             </Tabs>
           </Paper>
           
-          {/* Tab Panels */}
           <Paper sx={{ p: 3 }}>
-            {/* General Settings */}
             {tabValue === 0 && (
               <Box>
                 <Typography variant="h6" gutterBottom>
@@ -446,7 +422,6 @@ const AdminSettingsPage = () => {
               </Box>
             )}
             
-            {/* Email Settings */}
             {tabValue === 1 && (
               <Box>
                 <Typography variant="h6" gutterBottom>
@@ -540,7 +515,6 @@ const AdminSettingsPage = () => {
               </Box>
             )}
             
-            {/* Payment Settings */}
             {tabValue === 2 && (
               <Box>
                 <Typography variant="h6" gutterBottom>
@@ -645,7 +619,6 @@ const AdminSettingsPage = () => {
               </Box>
             )}
             
-            {/* Security Settings */}
             {tabValue === 3 && (
               <Box>
                 <Typography variant="h6" gutterBottom>
@@ -766,7 +739,6 @@ const AdminSettingsPage = () => {
               </Box>
             )}
             
-            {/* Action Buttons */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
               <Button
                 variant="outlined"
@@ -793,7 +765,6 @@ const AdminSettingsPage = () => {
         </>
       )}
       
-      {/* Test Email Dialog */}
       <Dialog open={testEmailDialogOpen} onClose={handleCloseTestEmailDialog}>
         <DialogTitle>Envoyer un email de test</DialogTitle>
         <DialogContent>
@@ -827,4 +798,3 @@ const AdminSettingsPage = () => {
 };
 
 export default AdminSettingsPage;
-

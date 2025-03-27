@@ -20,7 +20,6 @@ const logger = winston.createLogger({
   ]
 });
 
-// Create a new event
 exports.createEvent = async (req, res) => {
   try {
     const {
@@ -40,7 +39,6 @@ exports.createEvent = async (req, res) => {
       metadata
     } = req.body;
 
-    // Check if venue exists
     const venue = await Venue.findByPk(venueId);
     if (!venue) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -48,7 +46,6 @@ exports.createEvent = async (req, res) => {
       });
     }
 
-    // Check if category exists
     const category = await EventCategory.findByPk(categoryId);
     if (!category) {
       return res.status(StatusCodes.BAD_REQUEST).json({
@@ -56,7 +53,6 @@ exports.createEvent = async (req, res) => {
       });
     }
 
-    // Create event
     const event = await Event.create({
       title,
       description,
@@ -75,7 +71,6 @@ exports.createEvent = async (req, res) => {
       metadata: metadata || {}
     });
 
-    // Publish event_created event to RabbitMQ
     await publishToQueue('event_created', {
       id: event.id,
       title: event.title,
@@ -102,13 +97,11 @@ exports.createEvent = async (req, res) => {
   }
 };
 
-// Get all events with pagination
 exports.getAllEvents = async (req, res) => {
   try {
     const { page = 1, limit = 10, status, categoryId, startDate, endDate, search } = req.query;
     const offset = (page - 1) * limit;
 
-    // Build filter conditions
     const whereConditions = {};
     
     if (status) {
@@ -138,13 +131,11 @@ exports.getAllEvents = async (req, res) => {
       ];
     }
     
-    // Only show public events to non-admin users
     if (req.user && req.user.role !== 'admin' && req.user.role !== 'organizer') {
       whereConditions.isPublic = true;
       whereConditions.status = 'published';
     }
 
-    // Get events with pagination
     const { count, rows: events } = await Event.findAndCountAll({
       where: whereConditions,
       include: [
@@ -181,7 +172,6 @@ exports.getAllEvents = async (req, res) => {
   }
 };
 
-// Get event by ID
 exports.getEventById = async (req, res) => {
   try {
     const eventId = req.params.id;
@@ -209,7 +199,6 @@ exports.getEventById = async (req, res) => {
       });
     }
 
-    // Check if user has access to non-public event
     if (!event.isPublic && req.user && req.user.role !== 'admin' && req.user.id !== event.organizerId) {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: 'Access denied'
@@ -230,7 +219,6 @@ exports.getEventById = async (req, res) => {
   }
 };
 
-// Update event
 exports.updateEvent = async (req, res) => {
   try {
     const eventId = req.params.id;
@@ -260,14 +248,12 @@ exports.updateEvent = async (req, res) => {
       });
     }
 
-    // Check if user has permission to update event
     if (req.user.role !== 'admin' && req.user.id !== event.organizerId) {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: 'Access denied'
       });
     }
 
-    // Check if venue exists if provided
     if (venueId) {
       const venue = await Venue.findByPk(venueId);
       if (!venue) {
@@ -277,7 +263,6 @@ exports.updateEvent = async (req, res) => {
       }
     }
 
-    // Check if category exists if provided
     if (categoryId) {
       const category = await EventCategory.findByPk(categoryId);
       if (!category) {
@@ -287,7 +272,6 @@ exports.updateEvent = async (req, res) => {
       }
     }
 
-    // Update event
     await event.update({
       title: title || event.title,
       description: description || event.description,
@@ -306,7 +290,6 @@ exports.updateEvent = async (req, res) => {
       metadata: metadata || event.metadata
     });
 
-    // Publish event_updated event to RabbitMQ
     await publishToQueue('event_updated', {
       id: event.id,
       title: event.title,
@@ -334,7 +317,6 @@ exports.updateEvent = async (req, res) => {
   }
 };
 
-// Cancel event
 exports.cancelEvent = async (req, res) => {
   try {
     const eventId = req.params.id;
@@ -347,19 +329,16 @@ exports.cancelEvent = async (req, res) => {
       });
     }
 
-    // Check if user has permission to cancel event
     if (req.user.role !== 'admin' && req.user.id !== event.organizerId) {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: 'Access denied'
       });
     }
 
-    // Update event status to cancelled
     await event.update({
       status: 'cancelled'
     });
 
-    // Publish event_cancelled event to RabbitMQ
     await publishToQueue('event_cancelled', {
       id: event.id,
       title: event.title,
@@ -382,7 +361,6 @@ exports.cancelEvent = async (req, res) => {
   }
 };
 
-// Add image to event
 exports.addEventImage = async (req, res) => {
   try {
     const eventId = req.params.id;
@@ -396,14 +374,12 @@ exports.addEventImage = async (req, res) => {
       });
     }
 
-    // Check if user has permission to add image
     if (req.user.role !== 'admin' && req.user.id !== event.organizerId) {
       return res.status(StatusCodes.FORBIDDEN).json({
         message: 'Access denied'
       });
     }
 
-    // Create event image
     const eventImage = await EventImage.create({
       eventId,
       imageUrl,
@@ -426,14 +402,12 @@ exports.addEventImage = async (req, res) => {
   }
 };
 
-// Get events by organizer
 exports.getEventsByOrganizer = async (req, res) => {
   try {
     const organizerId = req.params.organizerId;
     const { page = 1, limit = 10, status } = req.query;
     const offset = (page - 1) * limit;
 
-    // Build filter conditions
     const whereConditions = {
       organizerId
     };
@@ -442,13 +416,11 @@ exports.getEventsByOrganizer = async (req, res) => {
       whereConditions.status = status;
     }
 
-    // Check if user has permission to view all organizer events
     if (req.user.role !== 'admin' && req.user.id !== organizerId) {
       whereConditions.isPublic = true;
       whereConditions.status = 'published';
     }
 
-    // Get events with pagination
     const { count, rows: events } = await Event.findAndCountAll({
       where: whereConditions,
       include: [
@@ -485,15 +457,13 @@ exports.getEventsByOrganizer = async (req, res) => {
   }
 };
 
-// Get featured events for homepage
 exports.getFeaturedEvents = async (req, res) => {
   try {
-    // Get featured events (published events with most recent dates)
     const events = await Event.findAll({
       where: {
         status: 'published',
         startDate: {
-          [db.Sequelize.Op.gte]: new Date() // Only future events
+          [db.Sequelize.Op.gte]: new Date() 
         }
       },
       include: [
@@ -511,11 +481,11 @@ exports.getFeaturedEvents = async (req, res) => {
           model: EventImage,
           as: 'images',
           attributes: ['id', 'imageUrl', 'caption'],
-          limit: 1 // Just get one image per event for the homepage
+          limit: 1 
         }
       ],
-      limit: 6, // Limit to 6 featured events
-      order: [['startDate', 'ASC']] // Order by start date ascending
+      limit: 6, 
+      order: [['startDate', 'ASC']] 
     });
 
     return res.status(StatusCodes.OK).json({
@@ -532,7 +502,6 @@ exports.getFeaturedEvents = async (req, res) => {
   }
 };
 
-// Get all event categories
 exports.getCategories = async (req, res) => {
   try {
     const categories = await EventCategory.findAll({
@@ -555,4 +524,3 @@ exports.getCategories = async (req, res) => {
     });
   }
 };
-

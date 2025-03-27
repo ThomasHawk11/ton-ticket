@@ -44,7 +44,6 @@ import eventService from '../../services/eventService';
 const AdminEventsPage = () => {
   const navigate = useNavigate();
   
-  // State
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,12 +60,10 @@ const AdminEventsPage = () => {
   const [selectedEventId, setSelectedEventId] = useState(null);
   
   useEffect(() => {
-    // Fetch events when component mounts or filters change
     fetchEvents();
     fetchCategories();
   }, [page, rowsPerPage, searchTerm, filterCategory, filterStatus]);
   
-  // Fetch events
   const fetchEvents = async () => {
     try {
       setLoading(true);
@@ -102,7 +99,6 @@ const AdminEventsPage = () => {
     }
   };
   
-  // Fetch categories
   const fetchCategories = async () => {
     try {
       const response = await eventService.getEventCategories();
@@ -112,68 +108,57 @@ const AdminEventsPage = () => {
     }
   };
   
-  // Handle page change
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
   
-  // Handle rows per page change
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
   
-  // Handle search
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
     setPage(0);
   };
   
-  // Handle category filter change
   const handleCategoryFilterChange = (event) => {
     setFilterCategory(event.target.value);
     setPage(0);
   };
   
-  // Handle status filter change
   const handleStatusFilterChange = (event) => {
     setFilterStatus(event.target.value);
     setPage(0);
   };
   
-  // Open action menu
   const handleOpenActionMenu = (event, eventId) => {
     setActionMenuAnchorEl(event.currentTarget);
     setSelectedEventId(eventId);
   };
   
-  // Close action menu
   const handleCloseActionMenu = () => {
     setActionMenuAnchorEl(null);
     setSelectedEventId(null);
   };
   
-  // Open delete dialog
   const handleOpenDeleteDialog = (event) => {
     setEventToDelete(event);
     setDeleteDialogOpen(true);
     handleCloseActionMenu();
   };
   
-  // Close delete dialog
   const handleCloseDeleteDialog = () => {
     setDeleteDialogOpen(false);
     setEventToDelete(null);
   };
   
-  // Delete event
   const handleDeleteEvent = async () => {
     try {
       setLoading(true);
       
       await eventService.deleteEvent(eventToDelete.id);
       
-      // Refresh events
       fetchEvents();
       
       handleCloseDeleteDialog();
@@ -184,13 +169,11 @@ const AdminEventsPage = () => {
     }
   };
   
-  // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR');
   };
   
-  // Get event status
   const getEventStatus = (event) => {
     const now = new Date();
     const startDate = new Date(event.startDate);
@@ -390,7 +373,6 @@ const AdminEventsPage = () => {
         />
       </TableContainer>
       
-      {/* Action Menu */}
       <Menu
         anchorEl={actionMenuAnchorEl}
         open={Boolean(actionMenuAnchorEl)}
@@ -412,7 +394,6 @@ const AdminEventsPage = () => {
         </MenuItem>
       </Menu>
       
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleCloseDeleteDialog}
@@ -441,4 +422,3 @@ const AdminEventsPage = () => {
 };
 
 export default AdminEventsPage;
-

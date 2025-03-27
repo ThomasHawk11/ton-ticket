@@ -47,7 +47,6 @@ import authService from '../../services/authService';
 const AdminUsersPage = () => {
   const navigate = useNavigate();
   
-  // State
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,11 +64,9 @@ const AdminUsersPage = () => {
   const [selectedRole, setSelectedRole] = useState('');
   
   useEffect(() => {
-    // Fetch users when component mounts or filters change
     fetchUsers();
   }, [page, rowsPerPage, searchTerm, filterRole, filterStatus]);
   
-  // Fetch users
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -105,61 +102,51 @@ const AdminUsersPage = () => {
     }
   };
   
-  // Handle page change
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
   
-  // Handle rows per page change
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
   
-  // Handle search
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
     setPage(0);
   };
   
-  // Handle role filter change
   const handleRoleFilterChange = (event) => {
     setFilterRole(event.target.value);
     setPage(0);
   };
   
-  // Handle status filter change
   const handleStatusFilterChange = (event) => {
     setFilterStatus(event.target.value);
     setPage(0);
   };
   
-  // Open action menu
   const handleOpenActionMenu = (event, userId) => {
     setActionMenuAnchorEl(event.currentTarget);
     setSelectedUserId(userId);
   };
   
-  // Close action menu
   const handleCloseActionMenu = () => {
     setActionMenuAnchorEl(null);
     setSelectedUserId(null);
   };
   
-  // Open block dialog
   const handleOpenBlockDialog = (user) => {
     setSelectedUser(user);
     setBlockDialogOpen(true);
     handleCloseActionMenu();
   };
   
-  // Close block dialog
   const handleCloseBlockDialog = () => {
     setBlockDialogOpen(false);
     setSelectedUser(null);
   };
   
-  // Open role dialog
   const handleOpenRoleDialog = (user) => {
     setSelectedUser(user);
     setSelectedRole(user.role);
@@ -167,14 +154,12 @@ const AdminUsersPage = () => {
     handleCloseActionMenu();
   };
   
-  // Close role dialog
   const handleCloseRoleDialog = () => {
     setRoleDialogOpen(false);
     setSelectedUser(null);
     setSelectedRole('');
   };
   
-  // Block/unblock user
   const handleToggleBlockUser = async () => {
     try {
       setLoading(true);
@@ -182,7 +167,6 @@ const AdminUsersPage = () => {
       const action = selectedUser.status === 'active' ? 'block' : 'unblock';
       await authService.updateUserStatus(selectedUser.id, action);
       
-      // Refresh users
       fetchUsers();
       
       handleCloseBlockDialog();
@@ -193,14 +177,12 @@ const AdminUsersPage = () => {
     }
   };
   
-  // Update user role
   const handleUpdateUserRole = async () => {
     try {
       setLoading(true);
       
       await authService.updateUserRole(selectedUser.id, selectedRole);
       
-      // Refresh users
       fetchUsers();
       
       handleCloseRoleDialog();
@@ -211,13 +193,11 @@ const AdminUsersPage = () => {
     }
   };
   
-  // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR');
   };
   
-  // Get role chip
   const getRoleChip = (role) => {
     switch (role) {
       case 'admin':
@@ -231,7 +211,6 @@ const AdminUsersPage = () => {
     }
   };
   
-  // Get status chip
   const getStatusChip = (status) => {
     switch (status) {
       case 'active':
@@ -245,7 +224,6 @@ const AdminUsersPage = () => {
     }
   };
   
-  // Get user initials for avatar
   const getUserInitials = (firstName, lastName) => {
     return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
   };
@@ -411,7 +389,6 @@ const AdminUsersPage = () => {
         />
       </TableContainer>
       
-      {/* Action Menu */}
       <Menu
         anchorEl={actionMenuAnchorEl}
         open={Boolean(actionMenuAnchorEl)}
@@ -433,7 +410,6 @@ const AdminUsersPage = () => {
         </MenuItem>
       </Menu>
       
-      {/* Block/Unblock User Dialog */}
       <Dialog
         open={blockDialogOpen}
         onClose={handleCloseBlockDialog}
@@ -462,7 +438,6 @@ const AdminUsersPage = () => {
         </DialogActions>
       </Dialog>
       
-      {/* Change Role Dialog */}
       <Dialog
         open={roleDialogOpen}
         onClose={handleCloseRoleDialog}
@@ -505,4 +480,3 @@ const AdminUsersPage = () => {
 };
 
 export default AdminUsersPage;
-

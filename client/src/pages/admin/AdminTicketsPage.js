@@ -47,7 +47,6 @@ import eventService from '../../services/eventService';
 const AdminTicketsPage = () => {
   const navigate = useNavigate();
   
-  // State
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,12 +65,10 @@ const AdminTicketsPage = () => {
   const [resendDialogOpen, setResendDialogOpen] = useState(false);
   
   useEffect(() => {
-    // Fetch tickets when component mounts or filters change
     fetchTickets();
     fetchEvents();
   }, [page, rowsPerPage, searchTerm, filterEvent, filterStatus]);
   
-  // Fetch tickets
   const fetchTickets = async () => {
     try {
       setLoading(true);
@@ -107,7 +104,6 @@ const AdminTicketsPage = () => {
     }
   };
   
-  // Fetch events
   const fetchEvents = async () => {
     try {
       const response = await eventService.getEvents({ limit: 100 });
@@ -117,94 +113,79 @@ const AdminTicketsPage = () => {
     }
   };
   
-  // Handle page change
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
   
-  // Handle rows per page change
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
   
-  // Handle search
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
     setPage(0);
   };
   
-  // Handle event filter change
   const handleEventFilterChange = (event) => {
     setFilterEvent(event.target.value);
     setPage(0);
   };
   
-  // Handle status filter change
   const handleStatusFilterChange = (event) => {
     setFilterStatus(event.target.value);
     setPage(0);
   };
   
-  // Open action menu
   const handleOpenActionMenu = (event, ticketId) => {
     setActionMenuAnchorEl(event.currentTarget);
     setSelectedTicketId(ticketId);
   };
   
-  // Close action menu
   const handleCloseActionMenu = () => {
     setActionMenuAnchorEl(null);
     setSelectedTicketId(null);
   };
   
-  // Open QR code dialog
   const handleOpenQrDialog = (ticket) => {
     setSelectedTicket(ticket);
     setQrDialogOpen(true);
     handleCloseActionMenu();
   };
   
-  // Close QR code dialog
   const handleCloseQrDialog = () => {
     setQrDialogOpen(false);
     setSelectedTicket(null);
   };
   
-  // Open cancel dialog
   const handleOpenCancelDialog = (ticket) => {
     setSelectedTicket(ticket);
     setCancelDialogOpen(true);
     handleCloseActionMenu();
   };
   
-  // Close cancel dialog
   const handleCloseCancelDialog = () => {
     setCancelDialogOpen(false);
     setSelectedTicket(null);
   };
   
-  // Open resend dialog
   const handleOpenResendDialog = (ticket) => {
     setSelectedTicket(ticket);
     setResendDialogOpen(true);
     handleCloseActionMenu();
   };
   
-  // Close resend dialog
   const handleCloseResendDialog = () => {
     setResendDialogOpen(false);
     setSelectedTicket(null);
   };
   
-  // Cancel ticket
   const handleCancelTicket = async () => {
     try {
       setLoading(true);
       
       await ticketService.cancelTicket(selectedTicket.id);
       
-      // Refresh tickets
       fetchTickets();
       
       handleCloseCancelDialog();
@@ -215,18 +196,15 @@ const AdminTicketsPage = () => {
     }
   };
   
-  // Resend ticket
   const handleResendTicket = async () => {
     try {
       setLoading(true);
       
       await ticketService.resendTicket(selectedTicket.id);
       
-      // Close dialog
       handleCloseResendDialog();
       setLoading(false);
       
-      // Show success message
       setError(null);
       alert('Le billet a été renvoyé avec succès');
     } catch (error) {
@@ -236,7 +214,6 @@ const AdminTicketsPage = () => {
     }
   };
   
-  // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('fr-FR', {
@@ -248,7 +225,6 @@ const AdminTicketsPage = () => {
     });
   };
   
-  // Get ticket status chip
   const getStatusChip = (status) => {
     switch (status) {
       case 'reserved':
@@ -264,7 +240,6 @@ const AdminTicketsPage = () => {
     }
   };
   
-  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
   };
@@ -429,7 +404,6 @@ const AdminTicketsPage = () => {
         />
       </TableContainer>
       
-      {/* Action Menu */}
       <Menu
         anchorEl={actionMenuAnchorEl}
         open={Boolean(actionMenuAnchorEl)}
@@ -463,7 +437,6 @@ const AdminTicketsPage = () => {
         <MenuItem 
           onClick={() => {
             const ticket = tickets.find(t => t.id === selectedTicketId);
-            // In a real application, you would have an API endpoint to validate a ticket
             alert(`Billet ${ticket.id} marqué comme utilisé`);
             handleCloseActionMenu();
           }}
@@ -474,7 +447,6 @@ const AdminTicketsPage = () => {
         </MenuItem>
       </Menu>
       
-      {/* QR Code Dialog */}
       <Dialog
         open={qrDialogOpen}
         onClose={handleCloseQrDialog}
@@ -510,7 +482,6 @@ const AdminTicketsPage = () => {
           <Button 
             variant="contained" 
             onClick={() => {
-              // In a real application, you would have functionality to download or print the QR code
               alert('Fonctionnalité de téléchargement à implémenter');
             }}
           >
@@ -519,7 +490,6 @@ const AdminTicketsPage = () => {
         </DialogActions>
       </Dialog>
       
-      {/* Cancel Ticket Dialog */}
       <Dialog
         open={cancelDialogOpen}
         onClose={handleCloseCancelDialog}
@@ -543,7 +513,6 @@ const AdminTicketsPage = () => {
         </DialogActions>
       </Dialog>
       
-      {/* Resend Ticket Dialog */}
       <Dialog
         open={resendDialogOpen}
         onClose={handleCloseResendDialog}
@@ -571,4 +540,3 @@ const AdminTicketsPage = () => {
 };
 
 export default AdminTicketsPage;
-

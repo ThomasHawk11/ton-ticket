@@ -46,7 +46,6 @@ const AdminEventFormPage = () => {
   const { eventId } = useParams();
   const isEditMode = Boolean(eventId);
   
-  // State
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [error, setError] = useState(null);
@@ -61,17 +60,14 @@ const AdminEventFormPage = () => {
   const [imageFile, setImageFile] = useState(null);
   
   useEffect(() => {
-    // Fetch categories and venues when component mounts
     fetchCategories();
     fetchVenues();
     
-    // If in edit mode, fetch event data
     if (isEditMode) {
       fetchEventData();
     }
   }, [eventId]);
   
-  // Fetch categories
   const fetchCategories = async () => {
     try {
       const response = await eventService.getEventCategories();
@@ -82,11 +78,8 @@ const AdminEventFormPage = () => {
     }
   };
   
-  // Fetch venues
   const fetchVenues = async () => {
     try {
-      // In a real application, you would have a dedicated API endpoint for venues
-      // Here we're using mock data
       setVenues([
         { id: 1, name: 'Salle Pleyel', address: 'Paris', capacity: 1000 },
         { id: 2, name: 'Zénith', address: 'Paris', capacity: 5000 },
@@ -99,7 +92,6 @@ const AdminEventFormPage = () => {
     }
   };
   
-  // Fetch event data
   const fetchEventData = async () => {
     try {
       setInitialLoading(true);
@@ -107,7 +99,6 @@ const AdminEventFormPage = () => {
       const response = await eventService.getEventById(eventId);
       const event = response.data;
       
-      // Set form values
       formik.setValues({
         title: event.title || '',
         description: event.description || '',
@@ -120,12 +111,10 @@ const AdminEventFormPage = () => {
         maxTicketsPerUser: event.maxTicketsPerUser || 5
       });
       
-      // Set ticket types
       if (event.ticketTypes && event.ticketTypes.length > 0) {
         setTicketTypes(event.ticketTypes);
       }
       
-      // Set image preview
       if (event.imageUrl) {
         setImagePreview(event.imageUrl);
       }
@@ -138,7 +127,6 @@ const AdminEventFormPage = () => {
     }
   };
   
-  // Form validation schema
   const validationSchema = Yup.object({
     title: Yup.string()
       .required('Le titre est requis')
@@ -164,7 +152,6 @@ const AdminEventFormPage = () => {
       .max(10, 'Le nombre maximum est 10')
   });
   
-  // Formik form handling
   const formik = useFormik({
     initialValues: {
       title: '',
@@ -184,14 +171,12 @@ const AdminEventFormPage = () => {
         setError(null);
         setSuccess(null);
         
-        // Validate ticket types
         if (ticketTypes.length === 0) {
           setError('Vous devez définir au moins un type de billet');
           setLoading(false);
           return;
         }
         
-        // Check if at least one ticket type has quantity > 0
         const hasTickets = ticketTypes.some(ticket => ticket.quantity > 0);
         if (!hasTickets) {
           setError('Au moins un type de billet doit avoir une quantité supérieure à 0');
@@ -199,10 +184,8 @@ const AdminEventFormPage = () => {
           return;
         }
         
-        // Create FormData for image upload
         const formData = new FormData();
         
-        // Add event data
         const eventData = {
           ...values,
           ticketTypes
@@ -210,12 +193,10 @@ const AdminEventFormPage = () => {
         
         formData.append('eventData', JSON.stringify(eventData));
         
-        // Add image if selected
         if (imageFile) {
           formData.append('image', imageFile);
         }
         
-        // Create or update event
         if (isEditMode) {
           await eventService.updateEvent(eventId, formData);
           setSuccess('Événement mis à jour avec succès');
@@ -223,7 +204,6 @@ const AdminEventFormPage = () => {
           const response = await eventService.createEvent(formData);
           setSuccess('Événement créé avec succès');
           
-          // Navigate to edit page after creation
           navigate(`/admin/events/${response.data.id}`);
         }
         
@@ -236,19 +216,16 @@ const AdminEventFormPage = () => {
     }
   });
   
-  // Handle tab change
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
   
-  // Handle image change
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     
     if (file) {
       setImageFile(file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -257,7 +234,6 @@ const AdminEventFormPage = () => {
     }
   };
   
-  // Add ticket type
   const addTicketType = () => {
     setTicketTypes([
       ...ticketTypes,
@@ -271,14 +247,12 @@ const AdminEventFormPage = () => {
     ]);
   };
   
-  // Remove ticket type
   const removeTicketType = (index) => {
     const newTicketTypes = [...ticketTypes];
     newTicketTypes.splice(index, 1);
     setTicketTypes(newTicketTypes);
   };
   
-  // Update ticket type
   const updateTicketType = (index, field, value) => {
     const newTicketTypes = [...ticketTypes];
     newTicketTypes[index][field] = value;
@@ -334,7 +308,6 @@ const AdminEventFormPage = () => {
         </Tabs>
         
         <Box component="form" onSubmit={formik.handleSubmit} noValidate sx={{ p: 3 }}>
-          {/* General Information Tab */}
           {tabValue === 0 && (
             <Grid container spacing={3}>
               <Grid item xs={12}>
@@ -516,7 +489,6 @@ const AdminEventFormPage = () => {
             </Grid>
           )}
           
-          {/* Tickets Tab */}
           {tabValue === 1 && (
             <Box>
               <Typography variant="h6" gutterBottom>
@@ -607,7 +579,6 @@ const AdminEventFormPage = () => {
             </Box>
           )}
           
-          {/* Image Tab */}
           {tabValue === 2 && (
             <Box>
               <Typography variant="h6" gutterBottom>
@@ -682,4 +653,3 @@ const AdminEventFormPage = () => {
 };
 
 export default AdminEventFormPage;
-

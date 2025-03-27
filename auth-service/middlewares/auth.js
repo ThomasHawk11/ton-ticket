@@ -27,7 +27,6 @@ exports.verifyToken = (req, res, next) => {
   
   const token = authHeader.split(' ')[1];
   
-  // Verify token
   const { valid, decoded, error } = verifyAccessToken(token);
   
   if (!valid) {
@@ -62,4 +61,3 @@ exports.checkRole = (roles) => {
     next();
   };
 };
-
