@@ -1,0 +1,253 @@
+services:
+  # API Gateway
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "3001:3001"
+    depends_on:
+      - auth-service
+      - user-service
+      - event-service
+      - ticket-service
+    environment:
+      - PORT=3001
+      - AUTH_SERVICE_URL=http://auth-service:3002
+      - USER_SERVICE_URL=http://user-service:3003
+      - EVENT_SERVICE_URL=http://event-service:3004
+      - TICKET_SERVICE_URL=http://ticket-service:3005
+    networks:
+      - app-network
+    restart: on-failure
+
+  # Auth Service
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "3002:3002"
+    depends_on:
+      - auth-db
+      - rabbitmq
+    environment:
+      - PORT=3002
+      - DB_HOST=auth-db
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=auth_db
+      - RABBITMQ_URL=amqp://rabbitmq
+      - JWT_SECRET=your_jwt_secret_key
+    networks:
+      - app-network
+    restart: on-failure
+    command: >
+      sh -c "
+        echo 'Waiting for auth-db to be ready...' &&
+        sleep 10 &&
+        npm start
+      "
+
+  # User Service
+  user-service:
+    build: ./user-service
+    ports:
+      - "3003:3003"
+    depends_on:
+      - user-db
+      - rabbitmq
+      - auth-service
+    environment:
+      - PORT=3003
+      - DB_HOST=user-db
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=user_db
+      - RABBITMQ_URL=amqp://rabbitmq
+      - AUTH_SERVICE_URL=http://auth-service:3002
+    networks:
+      - app-network
+    restart: on-failure
+    command: >
+      sh -c "
+        echo 'Waiting for user-db and auth-service to be ready...' &&
+        sleep 15 &&
+        npm start
+      "
+
+  # Event Service
+  event-service:
+    build: ./event-service
+    ports:
+      - "3004:3004"
+    depends_on:
+      - event-db
+      - rabbitmq
+      - auth-service
+    environment:
+      - PORT=3004
+      - DB_HOST=event-db
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=event_db
+      - RABBITMQ_URL=amqp://rabbitmq
+      - AUTH_SERVICE_URL=http://auth-service:3002
+    networks:
+      - app-network
+    restart: on-failure
+    command: >
+      sh -c "
+        echo 'Waiting for event-db and auth-service to be ready...' &&
+        sleep 20 &&
+        npm start
+      "
+
+  # Ticket Service
+  ticket-service:
+    build: ./ticket-service
+    ports:
+      - "3005:3005"
+    depends_on:
+      - ticket-db
+      - rabbitmq
+      - auth-service
+      - event-service
+    environment:
+      - PORT=3005
+      - DB_HOST=ticket-db
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=ticket_db
+      - RABBITMQ_URL=amqp://rabbitmq
+      - AUTH_SERVICE_URL=http://auth-service:3002
+      - EVENT_SERVICE_URL=http://event-service:3004
+    networks:
+      - app-network
+    restart: on-failure
+    command: >
+      sh -c "
+        echo 'Waiting for ticket-db, rabbitmq, auth-service and event-service to be ready...' &&
+        sleep 40 &&
+        npm start
+      "
+
+  # Frontend
+  frontend:
+    build: ./client
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api-gateway
+    environment:
+      - REACT_APP_API_URL=http://localhost:3001
+    networks:
+      - app-network
+
+  # Databases
+  auth-db:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=auth_db
+    volumes:
+      - auth-db-data:/var/lib/mysql
+    networks:
+      - app-network
+
+  user-db:
+    image: mysql:8.0
+    ports:
+      - "3308:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=user_db
+    volumes:
+      - user-db-data:/var/lib/mysql
+    networks:
+      - app-network
+
+  event-db:
+    image: mysql:8.0
+    ports:
+      - "3309:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=event_db
+    volumes:
+      - event-db-data:/var/lib/mysql
+    networks:
+      - app-network
+
+  ticket-db:
+    image: mysql:8.0
+    ports:
+      - "3310:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=ticket_db
+    volumes:
+      - ticket-db-data:/var/lib/mysql
+    networks:
+      - app-network
+
+  # PHPMyAdmin instances for each database
+  phpmyadmin-auth:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      - PMA_HOST=auth-db
+      - PMA_PORT=3306
+    networks:
+      - app-network
+
+  phpmyadmin-user:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8082:80"
+    environment:
+      - PMA_HOST=user-db
+      - PMA_PORT=3306
+    networks:
+      - app-network
+
+  phpmyadmin-event:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8083:80"
+    environment:
+      - PMA_HOST=event-db
+      - PMA_PORT=3306
+    networks:
+      - app-network
+
+  phpmyadmin-ticket:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8084:80"
+    environment:
+      - PMA_HOST=ticket-db
+      - PMA_PORT=3306
+    networks:
+      - app-network
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  auth-db-data:
+  user-db-data:
+  event-db-data:
+  ticket-db-data:
